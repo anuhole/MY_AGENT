@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="AutoTestAI - AI-powered test automation agent that converts manual test cases into production-ready automation code">
+    <title>AutoTestAI — AI Test Automation Agent</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <!-- JSZip for client-side genuine ZIP packaging -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <!-- SheetJS for instant client-side Excel (.xlsx, .xls, .csv) parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- Mammoth for client-side Word (.docx) test case extraction -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- ═══ Animated Background ═══ -->
+    <div class="bg-grid"></div>
+    <div class="bg-glow bg-glow-1"></div>
+    <div class="bg-glow bg-glow-2"></div>
+    <div class="bg-glow bg-glow-3"></div>
+
+    <!-- ═══ Sidebar Navigation ═══ -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <div class="logo-icon">
+                    <i data-lucide="bot" class="logo-svg"></i>
+                </div>
+                <div class="logo-text">
+                    <h1>AutoTestAI</h1>
+                    <span class="version-badge">v1.0</span>
+                </div>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="#" class="nav-item active" data-section="generator" id="nav-generator">
+                <i data-lucide="wand-2"></i>
+                <span>Generator</span>
+            </a>
+            <a href="#" class="nav-item" data-section="projects" id="nav-projects">
+                <i data-lucide="folder-open"></i>
+                <span>Projects</span>
+            </a>
+            <a href="#" class="nav-item" data-section="execution" id="nav-execution">
+                <i data-lucide="play-circle"></i>
+                <span>Execution</span>
+            </a>
+            <a href="#" class="nav-item" data-section="settings" id="nav-settings">
+                <i data-lucide="settings"></i>
+                <span>Settings</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="ai-status">
+                <div class="status-dot active"></div>
+                <span>AI Engine Active</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ═══ Main Content Area ═══ -->
+    <main class="main-content">
+
+        <!-- ── Header Bar ── -->
+        <header class="top-bar">
+            <button class="menu-toggle" id="menu-toggle">
+                <i data-lucide="menu"></i>
+            </button>
+            <div class="breadcrumb">
+                <span class="breadcrumb-icon"><i data-lucide="home"></i></span>
+                <span class="breadcrumb-separator">/</span>
+                <span class="breadcrumb-current" id="breadcrumb-text">Code Generator</span>
+            </div>
+            <div class="header-actions">
+                <button class="btn-icon" id="btn-theme" title="Toggle theme">
+                    <i data-lucide="moon"></i>
+                </button>
+                <div class="api-indicator" id="api-indicator">
+                    <div class="status-dot active"></div>
+                    <span>Connected</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- ══════════════════════════════════════════════════════════ -->
+        <!-- ── SECTION: Code Generator ── -->
+        <!-- ══════════════════════════════════════════════════════════ -->
+        <section class="content-section active" id="section-generator">
+
+            <!-- Step Indicator -->
+            <div class="steps-indicator">
+                <div class="step active" id="step-1-indicator">
+                    <div class="step-number">1</div>
+                    <span>Upload & Test Cases</span>
+                </div>
+                <div class="step-line"></div>
+                <div class="step" id="step-2-indicator">
+                    <div class="step-number">2</div>
+                    <span>Configure</span>
+                </div>
+                <div class="step-line"></div>
+                <div class="step" id="step-3-indicator">
+                    <div class="step-number">3</div>
+                    <span>Generate</span>
+                </div>
+                <div class="step-line"></div>
+                <div class="step" id="step-4-indicator">
+                    <div class="step-number">4</div>
+                    <span>Download Project</span>
+                </div>
+            </div>
+
+            <!-- ── Step 1: Upload ── -->
+            <div class="step-content active" id="step-1">
+                <!-- Clean Session Notification Banner -->
+                <div id="new-project-banner" style="display:none; background:rgba(16, 185, 129, 0.12); border:1px solid rgba(16, 185, 129, 0.35); border-radius:var(--radius-md); padding:12px 18px; margin-bottom:24px; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+                    <div style="display:flex; align-items:center; gap:10px; color:var(--success); font-size:0.88rem;">
+                        <i data-lucide="sparkles" style="width:18px; height:18px;"></i>
+                        <span><strong>Clean Session Initialized:</strong> All previous uploads, logs & operations have been reset for your new project. (Previous work is safely stored in <a href="#" onclick="showSection('projects'); return false;" style="color:#6ee7b7; text-decoration:underline;">Project History</a>).</span>
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                        <button class="btn btn-secondary btn-sm" id="btn-restore-previous" style="font-size:0.78rem; padding:4px 10px;">
+                            <i data-lucide="rotate-ccw" style="width:13px; height:13px;"></i> Restore Previous Inputs
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card-grid">
+                    <!-- Test Cases Upload -->
+                    <div class="upload-card" id="upload-testcases">
+                        <div class="upload-card-header">
+                            <div class="upload-icon">
+                                <i data-lucide="file-spreadsheet"></i>
+                            </div>
+                            <h3>Test Cases</h3>
+                            <p>Upload Excel (.xlsx) or Word (.docx) files <span id="hint-tc" style="font-weight:600; font-size:0.75rem; display:block; margin-top:2px;"></span></p>
+                        </div>
+                        <div class="drop-zone" id="dropzone-testcases">
+                            <i data-lucide="upload-cloud" class="drop-icon"></i>
+                            <p>Drag & drop your file here</p>
+                            <span class="drop-hint">or click to browse (.xlsx, .docx)</span>
+                            <input type="file" id="file-testcases" accept=".xlsx,.xls,.docx,.csv" hidden>
+                        </div>
+                        <div class="upload-result" id="result-testcases" style="display:none;">
+                            <div class="result-success">
+                                <i data-lucide="check-circle"></i>
+                                <span id="result-testcases-text"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- HTML Upload -->
+                    <div class="upload-card" id="upload-html">
+                        <div class="upload-card-header">
+                            <div class="upload-icon html-icon">
+                                <i data-lucide="code-2"></i>
+                            </div>
+                            <h3>HTML Source</h3>
+                            <p>Upload HTML file or paste source code <span id="hint-html" style="font-weight:600; font-size:0.75rem; display:block; margin-top:2px;"></span></p>
+                        </div>
+                        <div class="drop-zone" id="dropzone-html">
+                            <i data-lucide="upload-cloud" class="drop-icon"></i>
+                            <p>Drag & drop HTML file</p>
+                            <span class="drop-hint">or click to browse</span>
+                            <input type="file" id="file-html" accept=".html,.htm" hidden>
+                        </div>
+                        <div class="html-paste-toggle">
+                            <button class="btn-text" id="btn-paste-html">
+                                <i data-lucide="clipboard"></i> Paste HTML instead
+                            </button>
+                        </div>
+                        <div class="html-paste-area" id="html-paste-area" style="display:none;">
+                            <textarea id="html-source-input" placeholder="Paste your HTML source code here..."></textarea>
+                        </div>
+                        <div class="upload-result" id="result-html" style="display:none;">
+                            <div class="result-success">
+                                <i data-lucide="check-circle"></i>
+                                <span id="result-html-text"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Screenshot Upload -->
+                    <div class="upload-card" id="upload-screenshot">
+                        <div class="upload-card-header">
+                            <div class="upload-icon screenshot-icon">
+                                <i data-lucide="image"></i>
+                            </div>
+                            <h3>Screenshots</h3>
+                            <p>Upload UI screenshots for Vision AI analysis <span id="hint-screenshot" style="font-weight:600; font-size:0.75rem; display:block; margin-top:2px;"></span></p>
+                        </div>
+                        <div class="drop-zone" id="dropzone-screenshot">
+                            <i data-lucide="upload-cloud" class="drop-icon"></i>
+                            <p>Drag & drop screenshots</p>
+                            <span class="drop-hint">PNG, JPG, WebP</span>
+                            <input type="file" id="file-screenshot" accept=".png,.jpg,.jpeg,.webp,.gif" multiple hidden>
+                        </div>
+                        <div class="upload-result" id="result-screenshot" style="display:none;">
+                            <div class="result-success">
+                                <i data-lucide="check-circle"></i>
+                                <span id="result-screenshot-text"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- HTML Extracted Locators Panel -->
+                <div class="parsed-preview" id="locators-preview-panel" style="display:none; margin-bottom:24px; border:1px solid rgba(6,182,212,0.3); background:rgba(18,25,43,0.85);">
+                    <div class="preview-header">
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <h3><i data-lucide="crosshair" style="color:var(--accent);"></i> Extracted HTML Element Locators</h3>
+                            <span class="badge" id="locators-count" style="background:rgba(6,182,212,0.2); color:var(--accent);">0 elements</span>
+                        </div>
+                        <div style="font-size:0.75rem; color:var(--text-secondary); display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                            <span>Priority Order:</span>
+                            <span class="badge" style="background:rgba(16,185,129,0.2); color:#34d399; font-weight:700;">1. ID</span>
+                            <span class="badge" style="background:rgba(59,130,246,0.2); color:#93c5fd; font-weight:700;">2. Class Name</span>
+                            <span class="badge" style="background:rgba(245,158,11,0.2); color:#fbbf24; font-weight:700;">3. CSS Selector</span>
+                            <span class="badge" style="background:rgba(168,85,247,0.2); color:#c084fc; font-weight:700;">4. XPath</span>
+                        </div>
+                    </div>
+                    <div class="preview-table-wrap">
+                        <table class="preview-table" id="locators-table">
+                            <thead>
+                                <tr>
+                                    <th style="width:160px;">Element Purpose</th>
+                                    <th style="width:110px;">Tag / Type</th>
+                                    <th>Selected Locator (Strict Priority Applied)</th>
+                                    <th style="width:150px; text-align:center;">Applied Strategy</th>
+                                </tr>
+                            </thead>
+                            <tbody id="locators-tbody">
+                                <!-- Dynamically populated from uploaded/pasted HTML -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Parsed Test Cases Preview -->
+                <div class="parsed-preview" id="parsed-preview">
+                    <div class="preview-header">
+                        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                            <h3><i data-lucide="list-checks"></i> Test Cases to Automate</h3>
+                            <span class="badge" id="tc-count">0 cases</span>
+                            <span class="badge" id="manual-bypass-badge" style="background:rgba(16,185,129,0.2); color:#34d399; font-weight:700; border:1px solid rgba(16,185,129,0.4); display:none;">
+                                <i data-lucide="shield-check" style="width:13px; height:13px; vertical-align:middle; margin-right:4px;"></i>Manual Cases Added — File Validation Bypassed
+                            </span>
+                        </div>
+                        <div style="display:flex; gap:8px;">
+                            <button class="btn btn-secondary btn-sm" id="btn-add-tc">
+                                <i data-lucide="plus"></i> Add Test Case
+                            </button>
+                            <button class="btn btn-secondary btn-sm" id="btn-clear-tc-list" title="Clear test cases to start fresh">
+                                <i data-lucide="trash-2"></i> Clear Cases
+                            </button>
+                            <button class="btn btn-secondary btn-sm" id="btn-load-sample-tc" title="Load sample test cases">
+                                <i data-lucide="refresh-cw"></i> Sample Cases
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Add Test Case Form (collapsible) -->
+                    <div id="add-tc-panel" style="display:none; background:rgba(13,20,36,0.6); border:1px solid var(--border); border-radius:var(--radius-md); padding:16px; margin-bottom:16px;">
+                        <h4 style="margin-bottom:12px; font-size:0.95rem;"><i data-lucide="edit-3"></i> Add Manual Test Case</h4>
+                        <div style="display:grid; grid-template-columns: 140px 1fr 120px; gap:12px; margin-bottom:12px;">
+                            <input type="text" id="new-tc-id" placeholder="ID (e.g. TC001)" style="padding:8px 12px; background:var(--bg-input); border:1px solid var(--border); border-radius:6px; color:#fff;">
+                            <input type="text" id="new-tc-title" placeholder="Test Case Title / Scenario" style="padding:8px 12px; background:var(--bg-input); border:1px solid var(--border); border-radius:6px; color:#fff;">
+                            <select id="new-tc-priority" style="padding:8px; background:var(--bg-input); border:1px solid var(--border); border-radius:6px; color:#fff;">
+                                <option value="High">High</option>
+                                <option value="Medium" selected>Medium</option>
+                                <option value="Low">Low</option>
+                            </select>
+                        </div>
+                        <div style="margin-bottom:12px;">
+                            <textarea id="new-tc-steps" placeholder="Test Steps (one per line):&#10;1. Navigate to login page&#10;2. Enter username 'standard_user'&#10;3. Enter password 'secret_sauce'&#10;4. Click Login button" style="width:100%; height:90px; padding:10px; background:var(--bg-input); border:1px solid var(--border); border-radius:6px; color:#fff; font-size:0.85rem; font-family:'JetBrains Mono', monospace;"></textarea>
+                        </div>
+                        <div style="display:flex; justify-content:flex-end; gap:8px;">
+                            <button class="btn btn-secondary btn-sm" id="btn-cancel-tc">Cancel</button>
+                            <button class="btn btn-primary btn-sm" id="btn-save-tc"><i data-lucide="check"></i> Save Test Case</button>
+                        </div>
+                    </div>
+
+                    <div class="preview-table-wrap">
+                        <table class="preview-table" id="preview-table">
+                            <thead>
+                                <tr>
+                                    <th style="width:100px;">ID</th>
+                                    <th>Title / Scenario</th>
+                                    <th>Steps Count</th>
+                                    <th>Priority</th>
+                                    <th style="width:80px; text-align:center;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="preview-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="step-actions">
+                    <div></div>
+                    <button class="btn btn-primary" id="btn-next-1">
+                        Next: Configure Framework <i data-lucide="arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ── Step 2: Configure ── -->
+            <div class="step-content" id="step-2">
+                <div class="config-grid">
+                    <!-- Language Selection -->
+                    <div class="config-card">
+                        <h3><i data-lucide="code-2"></i> Programming Language</h3>
+                        <div class="option-grid" id="lang-options">
+                            <button class="option-btn active" data-value="java" id="opt-java">
+                                <div class="option-icon">☕</div>
+                                <span>Java</span>
+                                <small>Enterprise-grade</small>
+                            </button>
+                            <button class="option-btn" data-value="python" id="opt-python">
+                                <div class="option-icon">🐍</div>
+                                <span>Python</span>
+                                <small>Fast prototyping</small>
+                            </button>
+                            <button class="option-btn" data-value="javascript" id="opt-javascript">
+                                <div class="option-icon">🟨</div>
+                                <span>JavaScript</span>
+                                <small>Modern & flexible</small>
+                            </button>
+                            <button class="option-btn" data-value="typescript" id="opt-typescript">
+                                <div class="option-icon">🔷</div>
+                                <span>TypeScript</span>
+                                <small>Type-safe</small>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Automation Tool Selection -->
+                    <div class="config-card">
+                        <h3><i data-lucide="zap"></i> Automation Tool</h3>
+                        <div class="option-grid" id="tool-options">
+                            <button class="option-btn active" data-value="selenium" id="opt-selenium">
+                                <div class="option-icon">🌐</div>
+                                <span>Selenium</span>
+                                <small>WebDriver 4</small>
+                            </button>
+                            <button class="option-btn" data-value="playwright" id="opt-playwright">
+                                <div class="option-icon">🎭</div>
+                                <span>Playwright</span>
+                                <small>Modern & fast</small>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Test Framework Selection -->
+                    <div class="config-card">
+                        <h3><i data-lucide="layers"></i> Test Framework</h3>
+                        <div class="option-grid" id="framework-options">
+                            <button class="option-btn active" data-value="testng" id="opt-testng">
+                                <div class="option-icon">🧪</div>
+                                <span>TestNG</span>
+                                <small>Java</small>
+                            </button>
+                            <button class="option-btn" data-value="junit5" id="opt-junit5">
+                                <div class="option-icon">✅</div>
+                                <span>JUnit 5</span>
+                                <small>Java</small>
+                            </button>
+                            <button class="option-btn" data-value="pytest" id="opt-pytest">
+                                <div class="option-icon">🧬</div>
+                                <span>pytest</span>
+                                <small>Python</small>
+                            </button>
+                            <button class="option-btn" data-value="playwright_test" id="opt-pw-test">
+                                <div class="option-icon">🎭</div>
+                                <span>PW Test</span>
+                                <small>JS/TS</small>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Report Tool Selection -->
+                    <div class="config-card">
+                        <h3><i data-lucide="bar-chart-3"></i> Report Tool</h3>
+                        <div class="option-grid" id="report-options">
+                            <button class="option-btn active" data-value="extent_reports" id="opt-extent">
+                                <div class="option-icon">📊</div>
+                                <span>ExtentReports</span>
+                                <small>Rich HTML</small>
+                            </button>
+                            <button class="option-btn" data-value="allure" id="opt-allure">
+                                <div class="option-icon">📈</div>
+                                <span>Allure</span>
+                                <small>Interactive</small>
+                            </button>
+                            <button class="option-btn" data-value="playwright_html" id="opt-pw-html">
+                                <div class="option-icon">📋</div>
+                                <span>PW Reporter</span>
+                                <small>Built-in</small>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Additional Settings -->
+                    <div class="config-card full-width">
+                        <h3><i data-lucide="settings-2"></i> Project Settings</h3>
+                        <div class="settings-form">
+                            <div class="form-group">
+                                <label for="input-base-url">Base URL</label>
+                                <input type="url" id="input-base-url" placeholder="https://your-app.com" value="">
+                            </div>
+                            <div class="form-group">
+                                <label for="input-project-name">Project Name</label>
+                                <input type="text" id="input-project-name" placeholder="my-automation-project" value="AutoTestAI-Playwright-TestNG">
+                            </div>
+                            <div class="form-group">
+                                <label for="input-project-author">Author / Group Member</label>
+                                <input type="text" id="input-project-author" placeholder="e.g. John (QA) / Group Member 1" value="Group Member 1">
+                            </div>
+                            <div class="form-group">
+                                <label for="input-project-module">Module / Feature</label>
+                                <input type="text" id="input-project-module" placeholder="e.g. Authentication, Checkout" value="Authentication Module">
+                            </div>
+                            <div class="form-group">
+                                <label for="input-package">Package Name</label>
+                                <input type="text" id="input-package" placeholder="com.company.tests" value="com.autotestai.automation">
+                            </div>
+                            <div class="form-group">
+                                <label for="select-browser">Browser</label>
+                                <select id="select-browser">
+                                    <option value="chrome" selected>Chrome</option>
+                                    <option value="firefox">Firefox</option>
+                                    <option value="edge">Edge</option>
+                                    <option value="safari">Safari</option>
+                                </select>
+                            </div>
+                            <div class="form-group checkbox-group">
+                                <input type="checkbox" id="check-headless">
+                                <label for="check-headless">Run headless</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Combination Validator -->
+                <div class="combo-validator" id="combo-validator">
+                    <div class="combo-valid" id="combo-valid" style="display:none;">
+                        <i data-lucide="check-circle"></i>
+                        <span id="combo-text">Java + Selenium + TestNG + ExtentReports</span>
+                    </div>
+                    <div class="combo-invalid" id="combo-invalid" style="display:none;">
+                        <i data-lucide="alert-triangle"></i>
+                        <span>Invalid combination! Please adjust your selection.</span>
+                    </div>
+                </div>
+
+                <div class="step-actions">
+                    <button class="btn btn-secondary" id="btn-back-2">
+                        <i data-lucide="arrow-left"></i> Back
+                    </button>
+                    <button class="btn btn-primary" id="btn-next-2">
+                        Generate Code <i data-lucide="sparkles"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ── Step 3: Generating ── -->
+            <div class="step-content" id="step-3">
+                <div class="generation-container">
+                    <div class="generation-animation">
+                        <div class="gen-spinner">
+                            <div class="spinner-ring"></div>
+                            <div class="spinner-ring"></div>
+                            <div class="spinner-ring"></div>
+                            <i data-lucide="bot" class="spinner-icon"></i>
+                        </div>
+                        <h2 id="gen-status-text">AI is generating your code...</h2>
+                        <p class="gen-subtitle" id="gen-subtitle">This may take 30-60 seconds</p>
+                    </div>
+
+                    <div class="gen-progress">
+                        <div class="gen-progress-bar" id="gen-progress-bar"></div>
+                    </div>
+
+                    <div class="gen-steps-log" id="gen-steps-log">
+                        <div class="gen-log-item active">
+                            <i data-lucide="loader" class="spin"></i>
+                            <span>Analyzing test cases & HTML...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Step 4: Result / Download ── -->
+            <div class="step-content" id="step-4">
+                <div class="result-container">
+                    <!-- Success Header -->
+                    <div class="result-header">
+                        <div class="success-icon-large">
+                            <i data-lucide="check-circle"></i>
+                        </div>
+                        <h2>Code Generated Successfully!</h2>
+                        <p id="result-summary">8 files generated • Java + Selenium + TestNG</p>
+                    </div>
+
+                    <!-- Code Preview Tabs -->
+                    <div class="code-preview-container">
+                        <div class="file-tabs" id="file-tabs">
+                            <!-- Dynamically populated -->
+                        </div>
+                        <div class="code-viewer">
+                            <div class="code-viewer-header">
+                                <span class="file-name" id="preview-filename">Select a file</span>
+                                <button class="btn-icon-sm" id="btn-copy-code" title="Copy code">
+                                    <i data-lucide="copy"></i>
+                                </button>
+                            </div>
+                            <pre class="code-block"><code id="code-display">// Select a file from the tabs above to preview</code></pre>
+                        </div>
+                    </div>
+
+                    <!-- Warnings -->
+                    <div class="warnings-panel" id="warnings-panel" style="display:none;">
+                        <h4><i data-lucide="alert-triangle"></i> Warnings</h4>
+                        <ul id="warnings-list"></ul>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="result-actions" style="flex-wrap: wrap; gap: 12px;">
+                        <button class="btn btn-primary btn-lg" id="btn-download">
+                            <i data-lucide="download"></i> Download Project (.zip)
+                        </button>
+                        <button class="btn btn-secondary btn-lg" id="btn-go-home">
+                            <i data-lucide="home"></i> Home / New Project
+                        </button>
+                        <button class="btn btn-secondary btn-lg" id="btn-view-in-history">
+                            <i data-lucide="folder-clock"></i> View in Project History
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ══════════════════════════════════════════════════════════ -->
+        <!-- ── SECTION: Group Projects & History ── -->
+        <!-- ══════════════════════════════════════════════════════════ -->
+        <section class="content-section" id="section-projects">
+            <div class="projects-header">
+                <div>
+                    <h2><i data-lucide="folder-git-2" style="color:var(--primary);"></i> Group Projects & Automation History</h2>
+                    <p>Reference previous frameworks, reuse test suites across team members, and download past bundles.</p>
+                </div>
+                <button class="btn btn-primary" onclick="showSection('generator'); setStep(1);">
+                    <i data-lucide="plus"></i> Create New Automation
+                </button>
+            </div>
+
+            <!-- Stats Bar -->
+            <div class="history-stats-bar">
+                <div class="history-stat-box">
+                    <div class="history-stat-icon"><i data-lucide="folder-check"></i></div>
+                    <div>
+                        <div class="history-stat-val" id="stat-total-projects">0</div>
+                        <div class="history-stat-lbl">Saved Projects</div>
+                    </div>
+                </div>
+                <div class="history-stat-box">
+                    <div class="history-stat-icon success"><i data-lucide="list-checks"></i></div>
+                    <div>
+                        <div class="history-stat-val" id="stat-total-cases">0</div>
+                        <div class="history-stat-lbl">Automated Test Cases</div>
+                    </div>
+                </div>
+                <div class="history-stat-box">
+                    <div class="history-stat-icon cyan"><i data-lucide="users"></i></div>
+                    <div>
+                        <div class="history-stat-val" id="stat-total-members">1</div>
+                        <div class="history-stat-lbl">Active Contributors</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="history-filters">
+                <div class="history-search">
+                    <i data-lucide="search"></i>
+                    <input type="text" id="input-history-search" placeholder="Search projects by name, author, module, or test case...">
+                </div>
+                <button class="btn btn-secondary btn-sm" id="btn-clear-history" title="Clear all saved history">
+                    <i data-lucide="trash-2"></i> Clear History
+                </button>
+            </div>
+
+            <!-- Projects Grid -->
+            <div class="projects-grid" id="projects-history-grid">
+                <!-- Dynamically populated from state.projectHistory -->
+            </div>
+
+            <!-- Empty State -->
+            <div class="empty-state" id="projects-empty-state" style="display:none;">
+                <i data-lucide="folder-open" class="empty-icon"></i>
+                <h2>No Saved Projects Yet</h2>
+                <p>Generate your first test automation framework to store it in history. Your group members can reference and clone it anytime.</p>
+                <button class="btn btn-primary" onclick="showSection('generator'); setStep(1);">
+                    <i data-lucide="wand-2"></i> Generate First Project
+                </button>
+            </div>
+        </section>
+
+        <!-- ══════════════════════════════════════════════════════════ -->
+        <!-- ── SECTION: Execution (placeholder) ── -->
+        <!-- ══════════════════════════════════════════════════════════ -->
+        <section class="content-section" id="section-execution">
+            <div class="empty-state">
+                <i data-lucide="play-circle" class="empty-icon"></i>
+                <h2>Test Execution</h2>
+                <p>Execute your generated test suites and view real-time results here.</p>
+                <button class="btn btn-primary" onclick="showSection('generator')">
+                    <i data-lucide="wand-2"></i> Generate Tests First
+                </button>
+            </div>
+        </section>
+
+        <!-- ══════════════════════════════════════════════════════════ -->
+        <!-- ── SECTION: Settings ── -->
+        <!-- ══════════════════════════════════════════════════════════ -->
+        <section class="content-section" id="section-settings">
+            <div class="settings-container">
+                <h2><i data-lucide="settings"></i> Settings</h2>
+
+                <div class="settings-card">
+                    <h3>AI Provider Configuration</h3>
+                    <div class="settings-form">
+                        <div class="form-group">
+                            <label for="setting-provider">Active AI Provider</label>
+                            <select id="setting-provider">
+                                <option value="openai">OpenAI (GPT-4o)</option>
+                                <option value="gemini">Google Gemini</option>
+                                <option value="ollama">Ollama (Local)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="setting-api-key">API Key</label>
+                            <input type="password" id="setting-api-key" placeholder="sk-...">
+                        </div>
+                        <div class="form-group">
+                            <label for="setting-model">Model</label>
+                            <input type="text" id="setting-model" placeholder="gpt-4o" value="gpt-4o">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-card">
+                    <h3>Backend Connection</h3>
+                    <div class="settings-form">
+                        <div class="form-group">
+                            <label for="setting-backend-url">Backend API URL</label>
+                            <input type="url" id="setting-backend-url" placeholder="http://localhost:8000" value="http://localhost:8000">
+                        </div>
+                        <button class="btn btn-secondary" id="btn-test-connection">
+                            <i data-lucide="wifi"></i> Test Connection
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
